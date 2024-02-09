@@ -1,4 +1,4 @@
-type VendaItem = {
+export type VendaItem = {
     codigoItem: number
     codigoVenda: number
     nomeProduto: string

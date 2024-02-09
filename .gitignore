@@ -1,4 +1,6 @@
 dist
+*-shm
+*-wal
 
 # Logs
 logs

@@ -1,7 +1,7 @@
-type Cliente = {
+export type Cliente = {
     codigo: number
     nome: string
-    ativo: boolean
+    // inativo: boolean
     endereco: string
     numeroEndereco: number
     cidade: string
