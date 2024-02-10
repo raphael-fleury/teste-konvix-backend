@@ -32,7 +32,7 @@ const clientesRouter = Router()
         )`).run(cliente)
         cliente.codigo = Number(lastInsertRowid)
 
-        res.status(201).send(cliente)
+        res.status(201).location(`/clientes/${cliente.codigo}`).send(cliente)
     })
     .get('/:id', (req, res) => {
         const codigo = req.params.id

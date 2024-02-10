@@ -1,4 +1,5 @@
 dist
+db-teste.db
 *-shm
 *-wal
 
