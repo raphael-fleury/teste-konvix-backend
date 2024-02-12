@@ -1,7 +1,7 @@
 import { Router } from "express"
-import { Venda } from "../models/venda"
 import db from "../db"
 import moment from "moment"
+import { VendaItem } from "../models/vendaItem"
 
 const vendasRouter = Router()
     .get('/', (req, res) => {
@@ -13,14 +13,36 @@ const vendasRouter = Router()
         res.send(vendas)
     })
     .post('/', (req, res) => {
-        const venda = req.body
-        const { lastInsertRowid } = db.prepare(`INSERT INTO venda 
-            (cod_cliente, 'dta_venda ', 'val_total_venda ') VALUES
-            (@codigoCliente, @data, @valorTotal)
-        `).run(venda)
+        const { codigoCliente, data } = req.body
+        let codigoVenda, valorTotal = 0
         
-        venda.codigo = lastInsertRowid
-        res.status(201).location(`/vendas/${venda.codigo}`).send(venda)
+        db.transaction((produtos: VendaItem[]) => {
+            codigoVenda = db.prepare(`INSERT INTO venda 
+                (cod_cliente, 'dta_venda ', 'val_total_venda ') VALUES
+                (@codigoCliente, @data, 0)
+            `).run({ codigoCliente, data }).lastInsertRowid
+
+            for (const produto of produtos) {
+                produto.dataCadastro = moment().format()
+                produto.valorTotal = produto.valorUnitario * produto.quantidade
+                valorTotal += produto.valorTotal
+
+                db.prepare(`INSERT INTO venda_item
+                    (cod_venda, des_produto, val_unitario, 
+                        qtd_itens, val_total, dta_cadastro) VALUES
+                    (?, @nome, @valorUnitario,
+                        @quantidade, @valorTotal, @dataCadastro)
+                `).run(codigoVenda, produto)
+            }
+
+            db.prepare(`UPDATE venda
+                SET 'val_total_venda ' = ?
+                WHERE cod_venda = ?
+            `).run(valorTotal, codigoVenda)
+        })(req.body.produtos)
+        
+        const venda = {codigoVenda, }
+        res.status(201).location(`/vendas/${codigoVenda}`).send(venda)
     })
     .get('/:id', (req, res) => {
         const codigo = req.params.id

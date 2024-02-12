@@ -1,9 +1,9 @@
 export type VendaItem = {
     codigoItem: number
     codigoVenda: number
-    nomeProduto: string
+    nome: string
     valorUnitario: number
-    quantidadeItens: number
+    quantidade: number
     valorTotal: number
     dataCadastro: string
 }
