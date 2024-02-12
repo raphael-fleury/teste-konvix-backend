@@ -14,6 +14,15 @@ const clientesRouter = Router()
         FROM cliente WHERE flg_inativo = 0`).all()
         res.send(clientes)
     })
+    .get('/relatorio', (req, res) => {
+        const relatorio = db.prepare(`SELECT
+            cod_cliente as codigo, des_nome as nome,
+            val_venda_acumulado as valorDeVendaAcumulado,
+            dta_ult_pedido as dataUltimoPedido
+        FROM cliente WHERE flg_inativo = 0 ORDER BY dta_ult_pedido DESC`).all()
+        
+        res.send(relatorio)
+    })
     .post('/', (req, res) => {
         const now = moment().format()
         const cliente: Cliente = {
@@ -89,9 +98,6 @@ const clientesRouter = Router()
             res.send(cliente)
         else
             res.status(404).send({ message: "Cliente não encontrado" })
-    })
-    .get('/relatorio', (req, res) => {
-        res.send({})
     })
 
 export default clientesRouter
