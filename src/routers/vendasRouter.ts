@@ -12,6 +12,67 @@ const vendasRouter = Router()
 
         res.send(vendas)
     })
+    .get('/relatorio', (req, res) => {
+        let {inicio, fim} = req.query
+        if (!inicio)
+            inicio = moment("1900-01-01", "YYYY-MM-DD").format("YYYY-MM-DD")
+        if (!fim)
+            fim = moment().format("YYYY-MM-DD")
+
+        const dados = db.prepare(`
+            SELECT
+                venda.cod_venda as codigo,
+                venda.'dta_venda ' as data,
+                venda.'val_total_venda ' as valorTotal,
+                cliente.cod_cliente as codigoCliente,
+                cliente.des_nome as nomeCliente,
+                cliente.des_cidade as cidadeCliente,
+                cliente.des_uf as estadoCliente,
+                cliente.des_telefone as telefoneCliente,
+                item.cod_item as codigoItem,
+                item.des_produto as nomeProduto,
+                item.val_unitario as valorUnitario,
+                item.qtd_itens as quantidade,
+                item.val_total as valorTotal
+            FROM venda
+            JOIN cliente ON 
+                venda.cod_cliente = cliente.cod_cliente
+            JOIN venda_item as item ON
+                item.cod_venda = venda.cod_venda
+            WHERE venda.'dta_venda ' >= @inicio
+            AND venda.'dta_venda ' <= @fim
+            AND cliente.flg_inativo = 0
+        `).all({inicio, fim}) as any
+
+        const vendas: any[] = []
+        for (const fileira of dados) {
+            const indice = fileira.codigo
+            if (!vendas[indice]) {
+                vendas[indice] = {
+                    codigo: fileira.codigo,
+                    data: fileira.data,
+                    valorTotal: fileira.valorTotal,
+                    cliente: {
+                        codigo: fileira.codigoCliente,
+                        nome: fileira.nomeCliente,
+                        cidade: fileira.cidadeCliente,
+                        estado: fileira.estadoCliente,
+                        telefone: fileira.telefoneCliente
+                    },
+                    itens: []
+                }
+            }
+            vendas[indice].itens.push({
+                codigo: fileira.codigoItem,
+                nome: fileira.nomeProduto,
+                valorUnitario: fileira.valorUnitario,
+                quantidade: fileira.quantidade,
+                valorTotal: fileira.valorTotal
+            })
+        }
+
+        res.send(vendas.filter(x => x))
+    })
     .post('/', (req, res) => {
         const { codigoCliente, data } = req.body
         let codigoVenda, valorTotal = 0
@@ -55,9 +116,6 @@ const vendasRouter = Router()
             res.send(venda)
         else
             res.status(404).send({ message: "Venda não encontrada" })
-    })
-    .get('/relatorio', (req, res) => {
-        res.send({})
     })
 
 export default vendasRouter
