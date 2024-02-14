@@ -1,13 +1,19 @@
-export type Cliente = {
+import { z } from 'zod'
+
+export const novoClienteSchema = z.object({
+    nome: z.string(),
+    endereco: z.string(),
+    numeroEndereco: z.optional(z.coerce.number()),
+    cidade: z.string(),
+    estado: z.string().length(2),
+    telefone: z.string().regex(/^\d+$/),
+    contato: z.string(),
+})
+
+export type NovoCliente = z.infer<typeof novoClienteSchema>
+
+export type Cliente = NovoCliente & {
     codigo: number
-    nome: string
-    // inativo: boolean
-    endereco: string
-    numeroEndereco: number
-    cidade: string
-    estado: string
-    telefone: string
-    contato: string
     valorDeVendaAcumulado: number
     pedidosDeVenda: number
     dataUltimoPedido: string

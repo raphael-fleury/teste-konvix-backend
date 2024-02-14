@@ -1,5 +1,5 @@
 import { Router } from "express"
-import { Cliente } from "../models/cliente"
+import { Cliente, novoClienteSchema } from "../models/cliente"
 import db from "../db"
 import moment from "moment"
 
@@ -10,8 +10,9 @@ const clientesRouter = Router()
             des_endereco as endereco, num_endereco as numeroEndereco, 
             des_cidade as cidade, des_uf as estado, des_telefone as telefone, 
             des_contato as contato, dta_ult_pedido as dataUltimoPedido, 
-            dta_cadastro as dataCadastro, dta_alteracao as dataAlteracao
-        FROM cliente WHERE flg_inativo = 0`).all()
+            dta_cadastro as dataCadastro, dta_alteracao as dataAlteracao,
+            val_venda_acumulado as valorDeVendaAcumulado, qtd_venda_pedidos as pedidosDeVenda
+        FROM cliente WHERE flg_inativo = 0`).all() as Cliente[]
         res.send(clientes)
     })
     .get('/relatorio', (req, res) => {
@@ -24,9 +25,11 @@ const clientesRouter = Router()
         res.send(relatorio)
     })
     .post('/', (req, res) => {
-        const now = moment().format()
-        const cliente: Cliente = {
-            ...req.body,
+        const now = moment().utc().format()
+        const novoCliente = novoClienteSchema.parse(req.body)
+        const cliente = {
+            codigo: 0,
+            ...novoCliente,
             dataCadastro: now,
             dataAlteracao: now,
             dataUltimoPedido: now
@@ -50,8 +53,9 @@ const clientesRouter = Router()
             des_endereco as endereco, num_endereco as numeroEndereco, 
             des_cidade as cidade, des_uf as estado, des_telefone as telefone, 
             des_contato as contato, dta_ult_pedido as dataUltimoPedido, 
-            dta_cadastro as dataCadastro, dta_alteracao as dataAlteracao
-        FROM cliente WHERE cod_cliente = ? AND flg_inativo = 0`).get(codigo)
+            dta_cadastro as dataCadastro, dta_alteracao as dataAlteracao,
+            val_venda_acumulado as valorDeVendaAcumulado, qtd_venda_pedidos as pedidosDeVenda
+        FROM cliente WHERE cod_cliente = ? AND flg_inativo = 0`).get(codigo) as Cliente
 
         if (cliente)
             res.send(cliente)
@@ -60,13 +64,14 @@ const clientesRouter = Router()
     })
     .put('/:id', (req, res) => {
         const codigo = req.params.id
-        const cliente: any = db.prepare(`SELECT
+        const cliente = db.prepare(`SELECT
             cod_cliente as codigo, des_nome as nome, 
             des_endereco as endereco, num_endereco as numeroEndereco, 
             des_cidade as cidade, des_uf as estado, des_telefone as telefone, 
             des_contato as contato, dta_ult_pedido as dataUltimoPedido, 
-            dta_cadastro as dataCadastro, dta_alteracao as dataAlteracao
-        FROM cliente WHERE cod_cliente = ? AND flg_inativo = 0`).get(codigo)
+            dta_cadastro as dataCadastro, dta_alteracao as dataAlteracao,
+            val_venda_acumulado as valorDeVendaAcumulado, qtd_venda_pedidos as pedidosDeVenda
+        FROM cliente WHERE cod_cliente = ? AND flg_inativo = 0`).get(codigo) as Cliente
 
         if (!cliente) {
             res.status(404).send({ message: "Cliente não encontrado" })
@@ -75,8 +80,8 @@ const clientesRouter = Router()
 
         const clienteAtualizado = {
             ...cliente,
-            ...req.body,
-            dataAlteracao: moment().format()
+            ...novoClienteSchema.parse(req.body),
+            dataAlteracao: moment().utc().format()
         }
 
         db.prepare(`UPDATE cliente SET

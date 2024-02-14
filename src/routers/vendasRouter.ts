@@ -1,23 +1,24 @@
 import { Router } from "express"
+import { NovoItem, VendaItem } from "../models/vendaItem"
+import { Venda, novaVendaSchema } from "../models/venda"
+import { filtroDataSchema } from "../models/filtroData"
 import db from "../db"
 import moment from "moment"
-import { VendaItem } from "../models/vendaItem"
 
 const vendasRouter = Router()
     .get('/', (req, res) => {
         const vendas = db.prepare(`SELECT
             cod_venda as codigo, cod_cliente as codigoCliente, 
             "dta_venda " as data, "val_total_venda " as valorTotal
-        FROM venda`).all()
+        FROM venda`).all() as Venda[]
 
         res.send(vendas)
     })
     .get('/relatorio', (req, res) => {
-        let {inicio, fim} = req.query
-        if (!inicio)
-            inicio = moment("1900-01-01", "YYYY-MM-DD").format("YYYY-MM-DD")
-        if (!fim)
-            fim = moment().format("YYYY-MM-DD")
+        let {inicio, fim} = filtroDataSchema.parse(req.query)
+        if (!inicio) inicio = "1900-01-01"
+        if (!fim) fim = moment().format("YYYY-MM-DD")
+        console.log({inicio, fim})
 
         const dados = db.prepare(`
             SELECT
@@ -39,8 +40,8 @@ const vendasRouter = Router()
                 venda.cod_cliente = cliente.cod_cliente
             JOIN venda_item as item ON
                 item.cod_venda = venda.cod_venda
-            WHERE venda.'dta_venda ' >= @inicio
-            AND venda.'dta_venda ' <= @fim
+            WHERE DATE(venda.'dta_venda ') >= @inicio
+            AND DATE(venda.'dta_venda ') <= @fim
             AND cliente.flg_inativo = 0
         `).all({inicio, fim}) as any
 
@@ -74,17 +75,17 @@ const vendasRouter = Router()
         res.send(vendas.filter(x => x))
     })
     .post('/', (req, res) => {
-        const { codigoCliente, data } = req.body
+        let { codigoCliente, data, produtos } = novaVendaSchema.parse(req.body)
         let codigoVenda, valorTotal = 0
-        
-        db.transaction((produtos: VendaItem[]) => {
+
+        db.transaction((produtos: NovoItem[]) => {
             codigoVenda = db.prepare(`
                 INSERT INTO venda (cod_cliente, 'dta_venda ', 'val_total_venda ')
                 VALUES (@codigoCliente, @data, 0)
             `).run({ codigoCliente, data }).lastInsertRowid
 
-            for (const produto of produtos) {
-                produto.dataCadastro = moment().format()
+            for (const produto of produtos as VendaItem[]) {
+                produto.dataCadastro = moment().utc().format()
                 produto.valorTotal = produto.valorUnitario * produto.quantidade
                 valorTotal += produto.valorTotal
 
@@ -109,11 +110,11 @@ const vendasRouter = Router()
                 qtd_venda_pedidos = qtd_venda_pedidos + 1,
                 dta_ult_pedido = ?
                 WHERE cod_cliente = ?`
-            ).run(valorTotal, moment().format(), codigoCliente)
+            ).run(valorTotal, moment().utc().format(), codigoCliente)
 
-        })(req.body.produtos)
+        })(produtos)
         
-        const venda = {codigoVenda, }
+        const venda = {codigo: codigoVenda, codigoCliente, data, valorTotal}
         res.status(201).location(`/vendas/${codigoVenda}`).send(venda)
     })
     .get('/:id', (req, res) => {
