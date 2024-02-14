@@ -33,7 +33,7 @@ const vendasRouter = Router()
                 item.des_produto as nomeProduto,
                 item.val_unitario as valorUnitario,
                 item.qtd_itens as quantidade,
-                item.val_total as valorTotal
+                item.val_total as valorTotalProduto
             FROM venda
             JOIN cliente ON 
                 venda.cod_cliente = cliente.cod_cliente
@@ -67,7 +67,7 @@ const vendasRouter = Router()
                 nome: fileira.nomeProduto,
                 valorUnitario: fileira.valorUnitario,
                 quantidade: fileira.quantidade,
-                valorTotal: fileira.valorTotal
+                valorTotal: fileira.valorTotalProduto
             })
         }
 
@@ -78,9 +78,9 @@ const vendasRouter = Router()
         let codigoVenda, valorTotal = 0
         
         db.transaction((produtos: VendaItem[]) => {
-            codigoVenda = db.prepare(`INSERT INTO venda 
-                (cod_cliente, 'dta_venda ', 'val_total_venda ') VALUES
-                (@codigoCliente, @data, 0)
+            codigoVenda = db.prepare(`
+                INSERT INTO venda (cod_cliente, 'dta_venda ', 'val_total_venda ')
+                VALUES (@codigoCliente, @data, 0)
             `).run({ codigoCliente, data }).lastInsertRowid
 
             for (const produto of produtos) {
@@ -88,7 +88,8 @@ const vendasRouter = Router()
                 produto.valorTotal = produto.valorUnitario * produto.quantidade
                 valorTotal += produto.valorTotal
 
-                db.prepare(`INSERT INTO venda_item
+                db.prepare(`
+                    INSERT INTO venda_item
                     (cod_venda, des_produto, val_unitario, 
                         qtd_itens, val_total, dta_cadastro) VALUES
                     (?, @nome, @valorUnitario,
@@ -96,10 +97,20 @@ const vendasRouter = Router()
                 `).run(codigoVenda, produto)
             }
 
-            db.prepare(`UPDATE venda
+            db.prepare(`
+                UPDATE venda
                 SET 'val_total_venda ' = ?
                 WHERE cod_venda = ?
             `).run(valorTotal, codigoVenda)
+
+            db.prepare(`
+                UPDATE cliente SET
+                val_venda_acumulado = val_venda_acumulado + ?,
+                qtd_venda_pedidos = qtd_venda_pedidos + 1,
+                dta_ult_pedido = ?
+                WHERE cod_cliente = ?`
+            ).run(valorTotal, moment().format(), codigoCliente)
+
         })(req.body.produtos)
         
         const venda = {codigoVenda, }

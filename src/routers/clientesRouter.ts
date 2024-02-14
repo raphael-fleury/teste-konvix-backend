@@ -75,14 +75,14 @@ const clientesRouter = Router()
 
         const clienteAtualizado = {
             ...cliente,
-            ...req.body
+            ...req.body,
+            dataAlteracao: moment().format()
         }
 
         db.prepare(`UPDATE cliente SET
             des_nome = @nome, des_endereco = @endereco, num_endereco = @numeroEndereco,
             des_cidade = @cidade, des_uf = @estado, des_telefone = @telefone, 
-            des_contato = @contato, dta_ult_pedido = @dataUltimoPedido, 
-            dta_cadastro = @dataCadastro, dta_alteracao = @dataAlteracao
+            des_contato = @contato, dta_alteracao = @dataAlteracao
         WHERE cod_cliente = @codigo`).run(clienteAtualizado)
 
         res.send(clienteAtualizado)
