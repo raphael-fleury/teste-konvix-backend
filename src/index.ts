@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import clientesRouter from './routers/clientesRouter'
 import vendasRouter from './routers/vendasRouter'
+import authRouter from './routers/authRouter'
 
 const port = process.env.PORT || 4000
 const app = express()
@@ -16,6 +17,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/clientes', clientesRouter)
 app.use('/api/vendas', vendasRouter)
+app.use('/api/usuario', authRouter)
 
 app.use((req, res) => {
     const {url, method} = req

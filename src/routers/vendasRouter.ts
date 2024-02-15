@@ -18,7 +18,6 @@ const vendasRouter = Router()
         let {inicio, fim} = filtroDataSchema.parse(req.query)
         if (!inicio) inicio = "1900-01-01"
         if (!fim) fim = moment().format("YYYY-MM-DD")
-        console.log({inicio, fim})
 
         const dados = db.prepare(`
             SELECT
