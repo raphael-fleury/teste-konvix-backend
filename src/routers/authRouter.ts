@@ -28,7 +28,7 @@ const authRouter = Router()
         }
 
         const token = createToken({codigo: usuario.codigo})
-        res.cookie("token", token, { httpOnly: true, maxAge: maxAgeCookie })
+        res.cookie("token", token, { httpOnly: true, maxAge: maxAgeCookie, sameSite: "none" })
         res.status(200).send({codigo: usuario.codigo, email})
     })
     .post('/registro', (req, res) => {
@@ -49,7 +49,7 @@ const authRouter = Router()
         `).run(email, senhaCriptografada).lastInsertRowid
 
         const token = createToken({codigo})
-        res.cookie("token", token, { httpOnly: true, maxAge: maxAgeCookie })
+        res.cookie("token", token, { httpOnly: true, maxAge: maxAgeCookie, sameSite: "none" })
         res.status(201).send({codigo, email})
     })
     .post('/logout', (req, res) => {
