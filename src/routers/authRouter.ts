@@ -1,8 +1,11 @@
 import { Router } from "express";
 import { NovoUsuario, Usuario, novoUsuarioSchema } from "../models/usuario";
 import { encrypt } from "../util/encrypt";
+import { createToken } from "../util/jwt";
 import db from "../db";
 import bcrypt from "bcrypt"
+
+const maxAgeCookie = 60 * 60 * 24 * 7 //7 days
 
 const authRouter = Router()
     .post('/login', (req, res) => {
@@ -24,6 +27,8 @@ const authRouter = Router()
             return res.status(400).send({message: "Senha incorreta"})
         }
 
+        const token = createToken({codigo: usuario.codigo})
+        res.cookie("token", token, { httpOnly: true, maxAge: maxAgeCookie })
         res.status(200).send({codigo: usuario.codigo, email})
     })
     .post('/registro', (req, res) => {
@@ -43,9 +48,12 @@ const authRouter = Router()
             INSERT INTO usuario(des_email, des_senha) VALUES(?, ?)
         `).run(email, senhaCriptografada).lastInsertRowid
 
+        const token = createToken({codigo})
+        res.cookie("token", token, { httpOnly: true, maxAge: maxAgeCookie })
         res.status(201).send({codigo, email})
     })
     .post('/logout', (req, res) => {
+        res.clearCookie("token")
         res.status(200).send({message: "Logout feito com sucesso"})
     })
 
