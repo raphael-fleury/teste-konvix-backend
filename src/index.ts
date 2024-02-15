@@ -9,8 +9,9 @@ import authRouter from './routers/authRouter'
 const port = process.env.PORT || 4000
 const app = express()
 
+console.log(process.env.FRONTEND_URL)
 app.use(cors({
-    origin: ["http://localhost:3000", "https://teste-konvix-frontend.onrender.com"],
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true
 }))
 app.use(cookieParser())
