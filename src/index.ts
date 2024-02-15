@@ -9,7 +9,6 @@ import authRouter from './routers/authRouter'
 const port = process.env.PORT || 4000
 const app = express()
 
-console.log(process.env.FRONTEND_URL)
 app.use(cors({
     origin: [process.env.FRONTEND_URL || "http://localhost:3000", "*"],
     credentials: true
@@ -24,7 +23,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/usuario', authRouter)
 app.use((req, res, next) => {
-    const jwt = req.cookies?.token
+    const jwt = req.headers?.authorization
 
     if (!jwt)
         return res.status(401).send({message: "Não autorizado"})
