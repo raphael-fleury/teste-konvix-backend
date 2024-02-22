@@ -1,5 +1,6 @@
-import express, { NextFunction, Request, Response } from 'express'
 import { ZodError } from 'zod'
+import { getPayload } from './util/jwt'
+import express, { NextFunction, Request, Response } from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import clientesRouter from './routers/clientesRouter'
@@ -24,8 +25,9 @@ app.get('/', (req, res) => {
 app.use('/api/usuario', authRouter)
 app.use((req, res, next) => {
     const jwt = req.headers?.authorization
+    const token = jwt?.replace('Bearer ', '')
 
-    if (!jwt)
+    if (!jwt || !getPayload(token || ""))
         return res.status(401).send({message: "Não autorizado"})
 
     next()

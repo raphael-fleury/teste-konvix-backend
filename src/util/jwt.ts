@@ -6,3 +6,7 @@ const expiresIn = "7d";
 export function createToken(payload: any) {
     return jwt.sign(payload, secret, {expiresIn})
 }
+
+export function getPayload(token: string) {
+    return jwt.decode(token)
+}
